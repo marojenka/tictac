@@ -1,10 +1,4 @@
 {
-  "name": "tictac",
-  "version": "0.1.0",
-  "description": "www",
-  "main": "index.js",
-  "author": "Mark Selshot <mirkerz@gmail.com>",
-  "license": "MIT",
   "dependencies": {
     "jcanvas": "^20.1.4"
   }
