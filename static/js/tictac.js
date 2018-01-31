@@ -10,7 +10,7 @@ $(function tictac(){
     x = 0; y = 0;
     console.log(nx);
     console.log(ny);
-    colors = ['#c33', '#33c']
+    colors = ['#c33', '#33c', '#fff']
     icolor = 0;
     for( i=0; i<nx; i++) {
         for( j=0; j<ny; j++) {
@@ -25,15 +25,24 @@ $(function tictac(){
                 fillstyle: '#7a7',
                 x: x, y: y,
                 width: step, height: step,
+                data: { x: i, y: j },
                 click: function(layer) {
-                    $(this).animateLayer(
-                        layer, { fillStyle: colors[icolor] }, 500
-                    );
-                    if( icolor == 0 ) {
-                        icolor = 1;
-                    } else {
-                        icolor = 0;
-                    }
+                    Layer = layer
+                    $.getJSON(
+                        $SCRIPT_ROOT + '/_move', { x: layer.data.x, y: layer.data.y }, 
+                        function(data) {
+                            if( data.count >= 5 ) {
+                                icolor = 2;
+                            }
+                            $('canvas').animateLayer(
+                                Layer, { fillStyle: colors[icolor] }, 500
+                            );
+                            if( icolor == 0 ) {
+                                icolor = 1;
+                            } else {
+                                icolor = 0;
+                            }
+                    });
                 },
             });
 
@@ -46,8 +55,7 @@ $(function tictac(){
                 x: x, y: y,
                 fontSize: 12,
                 fontFamily: 'Verdana, sans-serif',
-                          // text: ix.toString() + ' ' + iy.toString() + ' ' + i,
-                text: i,
+                text: i + ' ' + j,
             });
         }
     }
@@ -98,4 +106,16 @@ $(function tictac(){
     // });
 
 
+});
+
+// ping the server
+$(function() {
+  $('#foo').bind('click', function() {
+    $.getJSON($SCRIPT_ROOT + '/ping', {},
+      function(data) {
+          $("#result").text(data.answer);
+      }
+    );
+    return false;
+  });
 });

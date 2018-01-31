@@ -100,9 +100,18 @@ class Gameboard(object):
         if not self.validate_indexes(x, y):
             raise ValueError('Can\'t edit using this indexes: %s', (x, y))
         if self.cell(x, y) != 0:
-            raise ValueError('Cell is not empty')
+            raise ValueError('Cell is not empty: %s', (x, y))
         if value is None:
             value = self.turn()
         self.data[x][y] = value
         count = self.check_for_win(x, y)
         return count
+
+    def squish(self):
+        values = []
+        for x in range(len(self.data)):
+            for y in range(len(self.data[x])):
+                value = self.data[x][y]
+                if value != 0:
+                    values = values + [[x, y, value]]
+        return values
