@@ -16,9 +16,17 @@ def ping():
 def refresh():
     return jsonify(data=g.squish())
 
+@app.route('/_clear')
+def clear():
+    g.clear()
+    return jsonify(result="cleared")
+
 @app.route('/_move')
 def move():
-    x = request.args.get('x', 0, type=int)
-    y = request.args.get('y', 0, type=int)
-    return jsonify(count=g.set(x, y))
+    try:
+        x = request.args.get('x', 0, type=int)
+        y = request.args.get('y', 0, type=int)
+        return jsonify(count=g.set(x, y))
+    except:
+        return jsonify(count=0)
 

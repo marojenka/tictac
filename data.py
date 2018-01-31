@@ -17,7 +17,7 @@ class Gameboard(object):
         self.ny = ny
         self.data = [[0 for y in range(ny)] for x in range(nx)]
 
-    def clean(self):
+    def clear(self):
         """
         Clear the gameboard.
         Should be the same as destroy & recreate

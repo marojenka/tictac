@@ -34,13 +34,17 @@ $(function tictac(){
                             if( data.count >= 5 ) {
                                 icolor = 2;
                             }
-                            $('canvas').animateLayer(
-                                Layer, { fillStyle: colors[icolor] }, 500
-                            );
-                            if( icolor == 0 ) {
-                                icolor = 1;
+                            if( data.count == 0 ) {
+                                alert('cell is filled.')
                             } else {
-                                icolor = 0;
+                                $('canvas').animateLayer(
+                                    Layer, { fillStyle: colors[icolor] }, 500
+                                );
+                                if( icolor == 0 ) {
+                                    icolor = 1;
+                                } else {
+                                    icolor = 0;
+                                }
                             }
                     });
                 },
@@ -119,3 +123,11 @@ $(function() {
     return false;
   });
 });
+
+// clear game board by clicling the button
+$('#clear').click(function() {
+    $.getJSON($SCRIPT_ROOT + '/_clear', {},
+        console.log('cleared')
+    );
+});
+
