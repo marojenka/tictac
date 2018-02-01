@@ -44,6 +44,17 @@ def update():
     move_number = request.args.get('move_number', type=int)
     return jsonify(moves=g.moves[move_number:])
 
+@app.route('/_set_user')
+def set_user():
+    user = get_user()
+    if user is None:
+        return None
+    value = request.args.get('value', type=int)
+    if value not in (0, 1):
+        return None
+    g.users[value] = user
+    return jsonify(value=value)
+
 @app.route('/_move')
 def move():
     user = get_user()

@@ -79,6 +79,15 @@ function clear() {
     );
 }
 
+function set_user(value) {
+  $.getJSON($SCRIPT_ROOT + '/_set_user', {value: value},
+    function(data) {
+      if(data.value == value)
+        alert('Role is set');
+    }
+  );
+}
+
 function init() {
     // fill initial canvas and shit
     canvas = $('canvas')
@@ -156,3 +165,5 @@ $(function tictac(){
 // clear game board by clicling the button
 $('#clear').click(clear);
 $('#refresh').click(refresh);
+$('#bex').click(function(){set_user('0')});
+$('#beo').click(function(){set_user('1')});
