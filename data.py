@@ -9,7 +9,7 @@ class Gameboard(object):
     1  -- X
     """
 
-    values = [1, -1]
+    values = [1, 2]
     turn_index = 1
 
     def __init__(self, nx=30, ny=30):
@@ -69,7 +69,7 @@ class Gameboard(object):
         # should return not only count but set of winning parts?
         # Make sure that given indexes gives us fitter cell
         value = self.cell(x, y)
-        if value not in (1, -1):
+        if value not in (1, 2):
             return None
         # we set directions via set of 4 vectors
         # and also will check their oposites
@@ -105,7 +105,7 @@ class Gameboard(object):
             value = self.turn()
         self.data[x][y] = value
         count = self.check_for_win(x, y)
-        return count
+        return {'count': count, 'value': value}
 
     def squish(self):
         values = []

@@ -26,7 +26,9 @@ def move():
     try:
         x = request.args.get('x', 0, type=int)
         y = request.args.get('y', 0, type=int)
-        return jsonify(count=g.set(x, y))
+        result = g.set(x, y)
+        return jsonify(count=result['count'], x=x, y=y,
+                       value=result['value'])
     except:
         return jsonify(count=0)
 

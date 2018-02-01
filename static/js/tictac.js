@@ -1,3 +1,40 @@
+colors = ['#7a7', '#c33', '#33c', '#fff']
+
+function fill_cell(x, y, value) {
+    layer = canvas.getLayer(x+'_'+y);
+    console.log(value);
+    console.log(colors[value]);
+    layer.fillStyle = colors[value];
+    canvas.drawLayers();
+}
+function refresh() {
+    $.getJSON($SCRIPT_ROOT + '/_refresh', {},
+      function(data) {
+        for(i in data.data) {
+          cell = data.data[i];
+          fill_cell(cell[0], cell[1], cell[2]);
+          console.log(cell);
+        }
+      }
+    );
+}
+function ping() {
+// ping the server
+  $('#foo').bind('click', function() {
+    $.getJSON($SCRIPT_ROOT + '/ping', {},
+      function(data) {
+          $("#result").text(data.answer);
+      }
+    );
+    return false;
+  });
+}
+function clear() {
+    $.getJSON($SCRIPT_ROOT + '/_clear', {},
+        console.log('cleared')
+    );
+}
+
 $(function tictac(){
     canvas = $('canvas')
     step = 100;
@@ -10,7 +47,6 @@ $(function tictac(){
     x = 0; y = 0;
     console.log(nx);
     console.log(ny);
-    colors = ['#c33', '#33c', '#fff']
     icolor = 0;
     for( i=0; i<nx; i++) {
         for( j=0; j<ny; j++) {
@@ -19,10 +55,12 @@ $(function tictac(){
 
             canvas.drawRect({
                 layer: true,
+                name: i + '_' + j,
+                groups: ['cells'],
                 strokeStyle: '#c33',
                 strokeWidth: 4,
                 fromCenter: true,
-                fillstyle: '#7a7',
+                fillstyle: colors[0],
                 x: x, y: y,
                 width: step, height: step,
                 data: { x: i, y: j },
@@ -31,22 +69,13 @@ $(function tictac(){
                     $.getJSON(
                         $SCRIPT_ROOT + '/_move', { x: layer.data.x, y: layer.data.y }, 
                         function(data) {
-                            if( data.count >= 5 ) {
-                                icolor = 2;
-                            }
+                            console.log(data);
                             if( data.count == 0 ) {
                                 alert('cell is filled.')
                             } else {
-                                $('canvas').animateLayer(
-                                    Layer, { fillStyle: colors[icolor] }, 500
-                                );
-                                if( icolor == 0 ) {
-                                    icolor = 1;
-                                } else {
-                                    icolor = 0;
-                                }
+                                fill_cell(data.x, data.y, data.value);
                             }
-                    });
+                        });
                 },
             });
 
@@ -112,22 +141,6 @@ $(function tictac(){
 
 });
 
-// ping the server
-$(function() {
-  $('#foo').bind('click', function() {
-    $.getJSON($SCRIPT_ROOT + '/ping', {},
-      function(data) {
-          $("#result").text(data.answer);
-      }
-    );
-    return false;
-  });
-});
 
 // clear game board by clicling the button
-$('#clear').click(function() {
-    $.getJSON($SCRIPT_ROOT + '/_clear', {},
-        console.log('cleared')
-    );
-});
-
+$('#clear').click();
