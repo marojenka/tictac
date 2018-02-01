@@ -1,13 +1,33 @@
-colors = ['#7a7', '#c33', '#33c', '#fff']
+colors = ['#7a7', '#c33', '#33c', '#fff'];
+need_redraw = true; 
+nx = 30; ny = 30;
+move_number = 0;
+
+function redraw() {
+    if( need_redraw ) {
+        canvas.drawLayers();
+        need_redraw = false;
+    }
+}
 
 function fill_cell(x, y, value) {
     layer = canvas.getLayer(x+'_'+y);
-    console.log(value);
-    console.log(colors[value]);
-    layer.fillStyle = colors[value];
-    canvas.drawLayers();
+    if( layer.data.value != value ) {
+        layer.data.value = value;
+        layer.fillStyle = colors[value];
+        need_redraw = true;
+    }
 }
+
 function refresh() {
+    need_redraw = true;
+    group = canvas.getLayerGroup('cells')
+    //for( i in group ) {
+    for(i=0; i<nx*ny; i++) {
+        console.log(i);
+        group[i].data.value = 0;
+        group[i].fillStyle = colors[0];
+    }
     $.getJSON($SCRIPT_ROOT + '/_refresh', {},
       function(data) {
         for(i in data.data) {
@@ -17,9 +37,22 @@ function refresh() {
         }
       }
     );
+    redraw();
 }
+
+function update() {
+    $.getJSON($SCRIPT_ROOT + '/_update', {move_number: move_number},
+      function(data) {
+        moves = data.moves;
+        for(i=0; i<moves.length; i++) {
+          fill_cell(moves[i][0], moves[i][1], moves[i][2]);
+        }
+      }
+    );
+    return false;
+}
+
 function ping() {
-// ping the server
   $('#foo').bind('click', function() {
     $.getJSON($SCRIPT_ROOT + '/ping', {},
       function(data) {
@@ -29,13 +62,25 @@ function ping() {
     return false;
   });
 }
+
 function clear() {
     $.getJSON($SCRIPT_ROOT + '/_clear', {},
-        console.log('cleared')
+      function(date) {
+        move_number = 0;
+        need_redraw = true;
+        group = canvas.getLayerGroup('cells')
+        //for( i in group ) {
+        for(i=0; i<nx*ny; i++) {
+            console.log(i);
+            group[i].data.value = 0;
+            group[i].fillStyle = colors[0];
+        }
+      }
     );
 }
 
-$(function tictac(){
+function init() {
+    // fill initial canvas and shit
     canvas = $('canvas')
     step = 100;
     nx = Math.floor(canvas.width()  / step);
@@ -70,9 +115,9 @@ $(function tictac(){
                         $SCRIPT_ROOT + '/_move', { x: layer.data.x, y: layer.data.y }, 
                         function(data) {
                             console.log(data);
-                            if( data.count == 0 ) {
-                                alert('cell is filled.')
-                            } else {
+                            if( data.count != 0 ) {
+                            //     alert('cell is filled.')
+                            // } else {
                                 fill_cell(data.x, data.y, data.value);
                             }
                         });
@@ -92,55 +137,22 @@ $(function tictac(){
             });
         }
     }
-   //  for( i=0; i<nx*ny; i++ ) {
-   //      if( x > x2 - step ) {
-   //          x = 0; ix = 0;
-   //          iy++;
-   //      }
-   //      if( y >= y2 ) {
-   //          y = 0; iy = 0;
-   //      }
-   //      x = x1 + ix * step + step / 2;
-   //      y = y1 + iy * step + step / 2;
-   //      ix++;
-   //  }
+}
 
-    // $('canvas').drawPolygon({
-    //       layer: true,
-    //       fillStyle: '#fff',
-    //       strokeStyle: '#333',
-    //       strokeWidth: 2,
-    //       x: 160, y: 150,
-    //       radius: 100,
-    //       sides: 3,
-    // });
-    //
-    //
-    // while(x1 <= x2) {
-    //     $('canvas').drawLine({
-    //         strokeStyle: '#aaa',
-    //         strokeWidth: width,
-    //         x1: x1, y1: 0,
-    //         x2: x1, y2: y2
-    //     });
-    //     x1 = x1 + step;
-    // }
-    // while(y1 < y2) {
-    //     $('canvas').drawLine({
-    //         strokeStyle: '#aaa',
-    //         strokeWidth: width,
-    //         x1: 0,  y1: y1, 
-    //         x2: x2, y2: y1
-    //     });
-    //     y1 = y1 + step;
-    // };
-    // canvas.click(function() {
-    //     alert('')
-    // });
+function loop() {
+    update();
+    redraw();
+    setTimeout(loop, 1000);
+}
 
-
+$(function tictac(){
+    init();
+    refresh();
+    redraw();
+    loop();
 });
 
 
 // clear game board by clicling the button
-$('#clear').click();
+$('#clear').click(clear);
+$('#refresh').click(refresh);

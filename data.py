@@ -10,7 +10,9 @@ class Gameboard(object):
     """
 
     values = [1, 2]
-    turn_index = 1
+    users = [None, None]
+    moves = []
+    turn_index = 0
 
     def __init__(self, nx=30, ny=30):
         self.nx = nx
@@ -22,7 +24,9 @@ class Gameboard(object):
         Clear the gameboard.
         Should be the same as destroy & recreate
         """
-        self.turn_index = 1
+        self.turn_index = 0
+        self.users = [None, None]
+        self.moves = []
         # prob should be self.nx and self.ny right :thonking:
         for x in range(len(self.data)):
             for y in range(len(self.data[x])):
@@ -33,11 +37,12 @@ class Gameboard(object):
         Give a value for automated move.
         Wont respect manual moves so be gentle
         """
+        result = self.values[self.turn_index]
         if self.turn_index == 0:
             self.turn_index = 1
         else:
             self.turn_index = 0
-        return self.values[self.turn_index]
+        return result
 
     def validate_indexes(self, x, y):
         """
@@ -106,6 +111,17 @@ class Gameboard(object):
         self.data[x][y] = value
         count = self.check_for_win(x, y)
         return {'count': count, 'value': value}
+
+    def move(self, x, y, user):
+        """ make a move by user """
+        if self.users[self.turn_index] is None:
+            self.users[self.turn_index] = user
+        elif self.users[self.turn_index] != user:
+            return None
+        result = self.set(x, y)
+        if result is not None:
+            self.moves.append((x, y, result['value']))
+        return result
 
     def squish(self):
         values = []
