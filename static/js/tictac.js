@@ -1,9 +1,30 @@
-colors = ['#7a7', '#c33', '#33c', '#fff'];
+// base03    #002b36
+// base02    #073642
+// base01    #586e75
+// base00    #657b83
+// base0     #839496
+// base1     #93a1a1
+// base2     #eee8d5
+// base3     #fdf6e3
+// yellow    #b58900
+// orange    #cb4b16
+// red       #dc322f
+// magenta   #d33682
+// violet    #6c71c4
+// blue      #268bd2
+// cyan      #2aa198
+// green     #859900
+
+colors = ['#fdf6e3', '#cb4b16', '#268bd2', '#eee8d5'];
 need_redraw = true; 
 nx = 30; ny = 30;
 move_number = 0;
 
+
 function redraw() {
+    // if global variable need_redraw is True
+    // then redraw whole layer.
+    // Not really efficien eh?
     if( need_redraw ) {
         canvas.drawLayers();
         need_redraw = false;
@@ -11,23 +32,26 @@ function redraw() {
 }
 
 function fill_cell(x, y, value) {
+    // fill just one cell
     layer = canvas.getLayer(x+'_'+y);
     if( layer.data.value != value ) {
         layer.data.value = value;
-        layer.fillStyle = colors[value];
-        need_redraw = true;
+        // layer.fillStyle = colors[value];
+        // need_redraw = true;
+        canvas.animateLayer(layer, {fillStyle: colors[value]}, 50);
     }
 }
 
 function refresh() {
+    // reset all layers to 0
     need_redraw = true;
     group = canvas.getLayerGroup('cells')
-    //for( i in group ) {
     for(i=0; i<nx*ny; i++) {
         console.log(i);
         group[i].data.value = 0;
         group[i].fillStyle = colors[0];
     }
+    redraw();
     $.getJSON($SCRIPT_ROOT + '/_refresh', {},
       function(data) {
         for(i in data.data) {
@@ -37,7 +61,6 @@ function refresh() {
         }
       }
     );
-    redraw();
 }
 
 function update() {
@@ -91,7 +114,7 @@ function set_user(value) {
 function init() {
     // fill initial canvas and shit
     canvas = $('canvas')
-    step = 100;
+    step = 50;
     nx = Math.floor(canvas.width()  / step);
     ny = Math.floor(canvas.height() / step);
     x1 = 0; x2 = step * nx;
@@ -99,8 +122,6 @@ function init() {
 
     ix = 0; iy = 0;
     x = 0; y = 0;
-    console.log(nx);
-    console.log(ny);
     icolor = 0;
     for( i=0; i<nx; i++) {
         for( j=0; j<ny; j++) {
@@ -111,7 +132,7 @@ function init() {
                 layer: true,
                 name: i + '_' + j,
                 groups: ['cells'],
-                strokeStyle: '#c33',
+                strokeStyle: colors[3],
                 strokeWidth: 4,
                 fromCenter: true,
                 fillstyle: colors[0],
@@ -133,17 +154,19 @@ function init() {
                 },
             });
 
-            canvas.drawText({
-                layer: true,
-                fromCenter: false,
-                fillStyle: '#9cf',
-                strokeStyle: '#25a',
-                strokeWidth: 1,
-                x: x, y: y,
-                fontSize: 12,
-                fontFamily: 'Verdana, sans-serif',
-                text: i + ' ' + j,
-            });
+            // annotate each cell with index
+            // debuging?
+            // canvas.drawText({
+            //     layer: true,
+            //     fromCenter: false,
+            //     fillStyle: '#9cf',
+            //     strokeStyle: '#25a',
+            //     strokeWidth: 1,
+            //     x: x, y: y,
+            //     fontSize: 12,
+            //     fontFamily: 'Verdana, sans-serif',
+            //     text: i + ' ' + j,
+            // });
         }
     }
 }
