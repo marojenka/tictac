@@ -10,7 +10,7 @@ class Gameboard(object):
     """
 
     values = [1, 2]
-    users = [None, None]
+    players = [None, None]
     moves = []
     turn_index = 0
 
@@ -25,7 +25,7 @@ class Gameboard(object):
         Should be the same as destroy & recreate
         """
         self.turn_index = 0
-        self.users = [None, None]
+        self.players = [None, None]
         self.moves = []
         # prob should be self.nx and self.ny right :thonking:
         for x in range(len(self.data)):
@@ -114,9 +114,9 @@ class Gameboard(object):
 
     def move(self, x, y, user):
         """ make a move by user """
-        if self.users[self.turn_index] is None:
-            self.users[self.turn_index] = user
-        elif self.users[self.turn_index] != user:
+        if self.players[self.turn_index] is None:
+            self.players[self.turn_index] = user
+        elif self.players[self.turn_index] != user:
             return None
         result = self.set(x, y)
         if result is not None:
