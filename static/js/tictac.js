@@ -91,6 +91,12 @@ function set_user(value) {
   );
 }
 
+function set_username(value) {
+  username = $('#username').val()
+  $.getJSON($SCRIPT_ROOT + '/_set_username', {username: username});
+}
+
+
 function drawGrid() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.beginPath();
@@ -177,5 +183,6 @@ $(function tictac() {
 // clear game board by clicling the button
 $('#clear').click(clear);
 $('#refresh').click(function(){update(0)});
+$('#set_username').click(function(){set_username()});
 $('#bex').click(function(){set_user('0')});
 $('#beo').click(function(){set_user('1')});

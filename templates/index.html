@@ -14,11 +14,14 @@
 </head>
 <body onresize="resizeCanvas(event)">
   <div id='menu'>
-    <h2 id='foo'>Hello! uid={{ user }}</h2>
-    <div id='result'>...</div>
+    <h2 id='foo'>〈( ^.^)ノ</h2>
+    <div style='padding: 10px;'>
+        <input id='username' style='width: 70%;' value="{{ user }}">
+        <button id='set_username' style='width: 10%;'>+</button>
+    </div>
     <div id='userlist'>
-        <div id='user1' style='width: 40px; text-align: center;'></div>
-        <div id='user2' style='width: 40px; text-align: center;'></div>
+        <div id='user1' style='text-align: center;'></div>
+        <div id='user2' style='text-align: center;'></div>
     </div>
     <button id=clear>clear</button>
     <button id=refresh>refresh</button>

@@ -56,6 +56,11 @@ def set_user():
     g.users[value] = user
     return jsonify(value=value)
 
+@app.route('/_set_username')
+def set_username():
+    session['username'] = request.args.get('username', type=str)
+    return jsonify(username=session['username'])
+
 @app.route('/_move')
 def move():
     user = get_user()
