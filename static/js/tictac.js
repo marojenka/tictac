@@ -56,8 +56,8 @@ function refresh() {
       function(data) {
         for(i in data.data) {
           cell = data.data[i];
-          fill_cell(cell[0], cell[1], cell[2]);
           console.log(cell);
+          fill_cell(cell[0], cell[1], cell[2]);
         }
       }
     );
