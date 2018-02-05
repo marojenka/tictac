@@ -19,7 +19,13 @@ colors = ['#fdf6e3', '#cb4b16', '#268bd2', '#eee8d5'];
 need_redraw = true; 
 nx = 30; ny = 30;
 move_number = 0;
-
+var canvas, ctx;
+var gridColor = '#eee8d5';
+var fillColor = 'green';
+var gridSize = 50;
+var gridThickness = 4;
+var offsetX = 0;
+var offsetY = 0;
 
 function redraw() {
     // if global variable need_redraw is True
@@ -111,6 +117,29 @@ function set_user(value) {
   );
 }
 
+function drawGrid() {
+    var canvasWidth = canvas.width;
+    var canvasHeight = canvas.height;
+    ctx.beginPath();
+    for (var x = offsetX%gridSize; x < canvasWidth; x += gridSize) {
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvasHeight);
+    }
+    for (var y = offsetY%gridSize; y < canvasHeight; y += gridSize) {
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvasWidth, y);
+    }
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = gridThickness;
+    ctx.stroke();
+}
+
+function redrawProgress(){
+    // get all moves and redraw it
+    // rewrite data, use only 2 sets of moves, dont waste memory on whole field
+    
+}
+
 function init() {
     // fill initial canvas and shit
     canvas = $('canvas')
@@ -171,6 +200,51 @@ function init() {
     }
 }
 
+function fillSquare(context, x, y, color){
+    // fill rectangle with player color
+    // change to X O if needed
+    context.fillStyle = color; // change to player color
+    context.fillRect(x+gridThickness/2-1, y+gridThickness/2-1, gridSize-gridThickness, gridSize-gridThickness);
+}
+
+function fillCell(evt){
+    var rect = canvas.getBoundingClientRect();
+    var cellX =  1 + (evt.clientX - rect.left) - (evt.clientX - rect.left)%gridSize;
+    var cellY = 1 + (evt.clientY - rect.top) - (evt.clientY - rect.top)%gridSize;
+    fillSquare(ctx, cellX, cellY, fillColor)
+}
+
+function fitToContainer(){
+  // Make it visually fill the positioned parent
+  canvas.style.width  = '100%';
+  canvas.style.height = '100%';
+  // ...then set the internal size to match
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+}
+
+function InitCanvas(){
+    canvas = document.getElementById('gamefield');
+    canvas.addEventListener('click', fillCell, false);
+    ctx = canvas.getContext("2d");
+
+    resizeCanvas()
+}
+
+function redrawCanvas(){
+    drawGrid();
+    redrawProgress();
+}
+
+function resizeCanvas(){
+    fitToContainer();
+    redrawCanvas();
+}
+
+window.onload = function(){
+        InitCanvas();
+    }
+/* If you dont know how to rewrite it, then comment it, right?
 function loop() {
     update();
     redraw();
@@ -183,7 +257,8 @@ $(function tictac(){
     redraw();
     loop();
 });
-
+*/
+window.addEventListener("onresize", resizeCanvas, false);
 
 // clear game board by clicling the button
 $('#clear').click(clear);
