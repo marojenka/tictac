@@ -3,23 +3,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>JavaScript Example</title>
+  <title>Tic-Tac-Toe</title>
   <script type="text/javascript" src="./static/js/jquery.js"></script>
   <script type="text/javascript" src="./static/js/jcanvas.js"></script>
   <script type="text/javascript" src="./static/js/tictac.js" defer='defer'></script>
+  <link rel="stylesheet" type="text/css" href="./static/css/style.css">
   <script type=text/javascript>
     $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
   </script>
 </head>
-<body>
-    <h1 id='foo'>Hello! uid={{ user }}</h1>
-  <div id='result'>...</div>
-  <div>
-      <button id=clear>clear</button>
-      <button id=refresh>refresh</button>
-      <button id=bex>be-x</button>
-      <button id=beo>be-o</button>
+<body onresize="resizeCanvas(event)">
+  <div id='menu'>
+    <h2 id='foo'>Hello! uid={{ user }}</h2>
+    <div id='result'>...</div>
+    <div id='userlist'>
+      user list here...
+    </div>
+    <button id=clear>clear</button>
+    <button id=refresh>refresh</button>
+    <button id=bex>be-x</button>
+    <button id=beo>be-o</button>
   </div>
-<canvas width="1200" height="1000" style="background: #a3a3a3"></canvas>
+  <div id='game'>
+    <canvas id='gamefield'></canvas>
+  </div>
 </body>
 </html>

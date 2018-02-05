@@ -15,62 +15,26 @@
 // cyan      #2aa198
 // green     #859900
 
-colors = ['#fdf6e3', '#cb4b16', '#268bd2', '#eee8d5'];
-need_redraw = true; 
-nx = 30; ny = 30;
-move_number = 0;
+var colors = ['#fdf6e3', '#cb4b16', '#268bd2', '#eee8d5'];
+var moveNumber = 0;
+var canvas, ctx;
+var gridColor = '#eee8d5';
+var gridSize = 50;
+var gridThickness = 4;
+var offsetX = 0;
+var offsetY = 0;
 
 
-function redraw() {
-    // if global variable need_redraw is True
-    // then redraw whole layer.
-    // Not really efficien eh?
-    if( need_redraw ) {
-        canvas.drawLayers();
-        need_redraw = false;
-    }
-}
-
-function fill_cell(x, y, value) {
-    // fill just one cell
-    layer = canvas.getLayer(x+'_'+y);
-    if( layer.data.value != value ) {
-        layer.data.value = value;
-        // layer.fillStyle = colors[value];
-        // need_redraw = true;
-        canvas.animateLayer(layer, {fillStyle: colors[value]}, 50);
-    }
-}
-
-function refresh() {
-    // reset all layers to 0
-    need_redraw = true;
-    group = canvas.getLayerGroup('cells')
-    for(i=0; i<nx*ny; i++) {
-        console.log(i);
-        group[i].data.value = 0;
-        group[i].fillStyle = colors[0];
-    }
-    redraw();
-    $.getJSON($SCRIPT_ROOT + '/_refresh', {},
-      function(data) {
-        for(i in data.data) {
-          cell = data.data[i];
-          console.log(cell);
-          fill_cell(cell[0], cell[1], cell[2]);
+function update(mn = moveNumber) {
+    $.getJSON($SCRIPT_ROOT + '/_update', {move_number: mn},
+        function(data) {
+            moves = data.moves;
+            //console.log(data);
+            moveNumber = data.move_number;
+            for(i=0; i < moves.length; i++) {
+                fillSquare(moves[i][0], moves[i][1], colors[moves[i][2]]);
+            }
         }
-      }
-    );
-}
-
-function update() {
-    $.getJSON($SCRIPT_ROOT + '/_update', {move_number: move_number},
-      function(data) {
-        moves = data.moves;
-        for(i=0; i<moves.length; i++) {
-          fill_cell(moves[i][0], moves[i][1], moves[i][2]);
-        }
-      }
     );
     return false;
 }
@@ -88,17 +52,10 @@ function ping() {
 
 function clear() {
     $.getJSON($SCRIPT_ROOT + '/_clear', {},
-      function(date) {
-        move_number = 0;
-        need_redraw = true;
-        group = canvas.getLayerGroup('cells')
-        //for( i in group ) {
-        for(i=0; i<nx*ny; i++) {
-            console.log(i);
-            group[i].data.value = 0;
-            group[i].fillStyle = colors[0];
+        function(date) {
+            moveNumber = 0;
+            drawGrid();
         }
-      }
     );
 }
 
@@ -111,82 +68,90 @@ function set_user(value) {
   );
 }
 
-function init() {
-    // fill initial canvas and shit
-    canvas = $('canvas')
-    step = 50;
-    nx = Math.floor(canvas.width()  / step);
-    ny = Math.floor(canvas.height() / step);
-    x1 = 0; x2 = step * nx;
-    y1 = 0; y2 = step * ny;
-
-    ix = 0; iy = 0;
-    x = 0; y = 0;
-    icolor = 0;
-    for( i=0; i<nx; i++) {
-        for( j=0; j<ny; j++) {
-            x = x1 + i * step + step / 2;
-            y = y1 + j * step + step / 2;
-
-            canvas.drawRect({
-                layer: true,
-                name: i + '_' + j,
-                groups: ['cells'],
-                strokeStyle: colors[3],
-                strokeWidth: 4,
-                fromCenter: true,
-                fillstyle: colors[0],
-                x: x, y: y,
-                width: step, height: step,
-                data: { x: i, y: j },
-                click: function(layer) {
-                    Layer = layer
-                    $.getJSON(
-                        $SCRIPT_ROOT + '/_move', { x: layer.data.x, y: layer.data.y }, 
-                        function(data) {
-                            console.log(data);
-                            if( data.count != 0 ) {
-                            //     alert('cell is filled.')
-                            // } else {
-                                fill_cell(data.x, data.y, data.value);
-                            }
-                        });
-                },
-            });
-
-            // annotate each cell with index
-            // debuging?
-            // canvas.drawText({
-            //     layer: true,
-            //     fromCenter: false,
-            //     fillStyle: '#9cf',
-            //     strokeStyle: '#25a',
-            //     strokeWidth: 1,
-            //     x: x, y: y,
-            //     fontSize: 12,
-            //     fontFamily: 'Verdana, sans-serif',
-            //     text: i + ' ' + j,
-            // });
-        }
+function drawGrid() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.beginPath();
+    for (var x = offsetX%gridSize; x < canvas.width; x += gridSize) {
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, canvas.height);
     }
+    for (var y = offsetY%gridSize; y < canvas.height; y += gridSize) {
+      ctx.moveTo(0, y);
+      ctx.lineTo(canvas.width, y);
+    }
+    ctx.strokeStyle = gridColor;
+    ctx.lineWidth = gridThickness;
+    ctx.stroke();
 }
+
+function fillSquare(x, y, color){
+    // fill rectangle with player color
+    // change to X O if needed
+    ctx.fillStyle = color;
+    ctx.fillRect(x*gridSize + gridThickness/2, y*gridSize + gridThickness/2, gridSize-gridThickness, gridSize-gridThickness);
+}
+
+function setMove(x, y){
+    $.getJSON(
+        $SCRIPT_ROOT + '/_move', { x: x, y: y }, 
+        function(data) {
+            console.log(data);
+            if( data.count != 0 ) {
+            //     alert('cell is filled.')
+            // } else {
+                update();
+            }
+        });
+}
+
+function canvasOnClick(evt){
+    var rect = canvas.getBoundingClientRect();
+    var cellX = Math.floor((evt.clientX - rect.left)/gridSize);
+    var cellY = Math.floor((evt.clientY - rect.top)/gridSize);
+    setMove(cellX, cellY);
+}
+
+function fitToContainer(){
+  // Make it visually fill the positioned parent
+  canvas.style.width  = '100%';
+  canvas.style.height = '100%';
+  // ...then set the internal size to match
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+}
+
+function InitCanvas(){
+    canvas = document.getElementById('gamefield');
+    canvas.addEventListener('click', canvasOnClick, false);
+    ctx = canvas.getContext("2d");
+
+    resizeCanvas();
+    loop();
+}
+
+function redrawCanvas(){
+    drawGrid();
+    update(0);
+}
+
+function resizeCanvas(){
+    fitToContainer();
+    redrawCanvas();
+}
+
+window.onload = function(){
+        InitCanvas();
+    }
 
 function loop() {
     update();
-    redraw();
     setTimeout(loop, 1000);
 }
 
-$(function tictac(){
-    init();
-    refresh();
-    redraw();
-    loop();
-});
-
+window.addEventListener("onresize", resizeCanvas, false);
 
 // clear game board by clicling the button
 $('#clear').click(clear);
-$('#refresh').click(refresh);
+$('#refresh').click(function(){update(0)});
 $('#bex').click(function(){set_user('0')});
 $('#beo').click(function(){set_user('1')});
