@@ -194,22 +194,25 @@ function canvasOnMouseDown(evt){
         drag = false;
     } else {
         clicked = true;
+        originalMousePosition = getMouseOffset(evt);
         pressTimer = setTimeout(function() {
             clicked = false;
             drag = true;
-            originalMousePosition = getMouseOffset(evt);
         }, 100);
     }
 }
 
 function canvasOnMouseUp(evt){
+    var mousePosition = getMouseOffset(evt);
+    var offset = [mousePosition[0] - originalMousePosition[0],
+                  mousePosition[1] - originalMousePosition[1]];
     drag = false;
     clearTimeout(pressTimer);
-    if(clicked) {
+    if ( ( clicked ) &
+         ( offset[0]**2 + offset[1]**2 < 0.5 * (gridSize * zoom.scale)**2 ) )
+    {
         clicked = false;
         canvasOnClick(evt);
-    } else {
-        redrawCanvas();
     }
 }
 
