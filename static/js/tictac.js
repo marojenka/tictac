@@ -41,6 +41,13 @@ var pressTimer;
 var clicked = false;
 var drag = false;
 var players = [0, 0];
+var originalMousePosition;
+
+function getMouseOffset(event) {
+  var offset  = [event.offsetX || event.pageX - $(event.target).offset().left,
+                 event.offsetY || event.pageY - $(event.target).offset().top];
+  return offset;
+}
 
 function update(mn = moveNumber) {
     $.getJSON($SCRIPT_ROOT + '/_update', {move_number: mn},
@@ -164,27 +171,35 @@ function fitToContainer(){
   canvas.width  = canvas.offsetWidth;
   canvas.height = canvas.offsetHeight;
 }
-var oldX = 0;
-var oldY = 0;
 
 function canvasOnMouseMove(evt){
     if(drag) {
-        zoom.offset.x += evt.offsetX - oldX;
-        zoom.offset.y += evt.offsetY - oldY;
-        redrawCanvas();
-        oldX = evt.offsetX;
-        oldY = evt.offsetY;
+        var mousePosition = getMouseOffset(evt);
+        var offset = [mousePosition[0] - originalMousePosition[0],
+                      mousePosition[1] - originalMousePosition[1]];
+        if ( offset[0]**2 + offset[1]**2 > (gridSize * zoom.scale)**2 ) {
+            zoom.offset.x += offset[0];
+            zoom.offset.y += offset[1];
+            originalMousePosition = mousePosition;
+            redrawCanvas();
+        }
     }
 }
 
 function canvasOnMouseDown(evt){
-    clicked = true;
-    pressTimer = setTimeout(function() {
+    if ( clicked ) {
         clicked = false;
-        drag = true;
-        oldX = evt.offsetX;
-        oldY = evt.offsetY;
-    }, 100);
+        drag = false;
+    } else if ( drag ) {
+        drag = false;
+    } else {
+        clicked = true;
+        pressTimer = setTimeout(function() {
+            clicked = false;
+            drag = true;
+            originalMousePosition = getMouseOffset(evt);
+        }, 100);
+    }
 }
 
 function canvasOnMouseUp(evt){
@@ -193,6 +208,8 @@ function canvasOnMouseUp(evt){
     if(clicked) {
         clicked = false;
         canvasOnClick(evt);
+    } else {
+        redrawCanvas();
     }
 }
 
