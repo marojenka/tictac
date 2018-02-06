@@ -5,19 +5,14 @@ class Gameboard(object):
     """
     gameboard of given size stored as list of lists two dimentional array.
     By default it's filled with zeroes.
-    -1 -- O
-    1  -- X
+    1 -- X
+    2 -- O
     """
 
     values = [1, 2]
-    players = [None, None]
-    moves = []
-    turn_index = 0
 
-    def __init__(self, nx=30, ny=30):
-        self.nx = nx
-        self.ny = ny
-        self.data = [[0 for y in range(ny)] for x in range(nx)]
+    def __init__(self):
+        self.clear()
 
     def clear(self):
         """
@@ -27,10 +22,7 @@ class Gameboard(object):
         self.turn_index = 0
         self.players = [None, None]
         self.moves = []
-        # prob should be self.nx and self.ny right :thonking:
-        for x in range(len(self.data)):
-            for y in range(len(self.data[x])):
-                self.data[x][y] = 0
+        self.data = {}
 
     def turn(self):
         """
@@ -46,23 +38,32 @@ class Gameboard(object):
 
     def validate_indexes(self, x, y):
         """
-        validate that given indexes are not out of bound
+        validate that given indexes are two integers
         """
-        if (x >= 0 and x < self.nx and
-                y >= 0 and y < self.ny):
-            return True  # SMART SMOrc
-        else:
+        return (isinstance(x, int) and isinstance(y, int))
+
+    def validate_user(self, user):
+        """
+        check that given user can make a move
+        """
+        if self.players[self.turn_index] is None:
+            self.players[self.turn_index] = user
+        elif self.players[self.turn_index] != user:
             return False
+        return True
 
     def cell(self, x, y):
         """
-        get value from cell [0<=x<nx, 0<=y<ny]
-        Return None if index is out of bounds.
+        get value from cell 
+        Return None if index is not valid.
         """
         if self.validate_indexes(x, y):
-            return self.data[x][y]
-        else:
-            return None
+            try:
+                return self.data[x][y]
+            except KeyError:
+                return 0
+
+        return None
 
     def check_for_win(self, x, y):
         """
@@ -78,7 +79,7 @@ class Gameboard(object):
             return None
         # we set directions via set of 4 vectors
         # and also will check their oposites
-        angles = [[1, 0],
+        angles = [[1,   0],
                   [0, 1],
                   [1, 1],
                   [-1, 1]]
@@ -91,9 +92,6 @@ class Gameboard(object):
                 while True:
                     cell = self.cell(x+sign*step*angles[i][0],
                                      y+sign*step*angles[i][1])
-                    # print(x+sign*step*angles[i][0],
-                    #       y+sign*step*angles[i][1],
-                    #       '  ', cell)
                     if value == cell:
                         count[i] = count[i] + 1
                         step = step + 1
@@ -102,32 +100,25 @@ class Gameboard(object):
         return max(count)
 
     def set(self, x, y, value=None):
+        """ set value to cell with given coordinates """
         if not self.validate_indexes(x, y):
-            raise ValueError('Can\'t edit using this indexes: %s', (x, y))
+            raise ValueError("Can\'t edit using this indexes: %s", (x, y))
         if self.cell(x, y) != 0:
-            raise ValueError('Cell is not empty: %s', (x, y))
+            raise ValueError("Cell is not empty: %s", (x, y))
         if value is None:
             value = self.turn()
+        if x not in self.data:
+            self.data[x] = {}
         self.data[x][y] = value
         count = self.check_for_win(x, y)
         return {'count': count, 'value': value}
 
     def move(self, x, y, user):
         """ make a move by user """
-        if self.players[self.turn_index] is None:
-            self.players[self.turn_index] = user
-        elif self.players[self.turn_index] != user:
+        if not self.validate_user(user):
             return None
+
         result = self.set(x, y)
         if result is not None:
             self.moves.append((x, y, result['value']))
         return result
-
-    def squish(self):
-        values = []
-        for x in range(len(self.data)):
-            for y in range(len(self.data[x])):
-                value = self.data[x][y]
-                if value != 0:
-                    values = values + [[x, y, value]]
-        return values

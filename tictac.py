@@ -2,7 +2,7 @@ from flask import Flask, session, request, render_template, jsonify
 from data import Gameboard
 app = Flask(__name__)
 
-g = Gameboard(30, 30)
+g = Gameboard()
 
 last_uid = 1
 
@@ -24,10 +24,6 @@ def index():
 @app.route('/_ping')
 def ping():
     return jsonify(answer='pong')
-
-@app.route('/_refresh')
-def refresh():
-    return jsonify(data=g.squish())
 
 @app.route('/_clear')
 def clear():
