@@ -21,10 +21,26 @@ var canvas, ctx;
 var gridColor = '#eee8d5';
 var gridSize = 50;
 var gridThickness = 4;
-var offsetX = 0;
-var offsetY = 0;
+var zoom = {
+  scale : 1,
+  speed : 2,
+  c : {
+    x : 0,
+    y : 0,
+  },
+  w : {
+    x : 0,
+    y : 0,
+  },
+  offset : {
+    x : 0,
+    y : 0,
+  }
+};
+var pressTimer;
+var clicked = false;
+var drag = false;
 var players = [0, 0];
-
 
 function update(mn = moveNumber) {
     $.getJSON($SCRIPT_ROOT + '/_update', {move_number: mn},
@@ -100,16 +116,16 @@ function set_username(value) {
 function drawGrid() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.beginPath();
-    for (var x = offsetX%gridSize; x < canvas.width; x += gridSize) {
+    for (var x = zoom.offset.x % (gridSize * zoom.scale); x < canvas.width; x += (gridSize * zoom.scale)) {
       ctx.moveTo(x, 0);
       ctx.lineTo(x, canvas.height);
     }
-    for (var y = offsetY%gridSize; y < canvas.height; y += gridSize) {
+    for (var y = zoom.offset.y % (gridSize * zoom.scale); y < canvas.height; y += (gridSize * zoom.scale)) {
       ctx.moveTo(0, y);
       ctx.lineTo(canvas.width, y);
     }
     ctx.strokeStyle = gridColor;
-    ctx.lineWidth = gridThickness;
+    ctx.lineWidth = gridThickness * zoom.scale;
     ctx.stroke();
 }
 
@@ -117,10 +133,10 @@ function fillSquare(x, y, color){
     // fill rectangle with player color
     // change to X O if needed
     ctx.fillStyle = color;
-    ctx.fillRect(x*gridSize+gridThickness/2,
-                 y*gridSize+gridThickness/2,
-                 gridSize-gridThickness,
-                 gridSize-gridThickness);
+    ctx.fillRect(zoom.offset.x + x * gridSize * zoom.scale + gridThickness * zoom.scale / 2,
+                 zoom.offset.y + y * gridSize * zoom.scale + gridThickness * zoom.scale / 2,
+                 (gridSize - gridThickness) * zoom.scale,
+                 (gridSize - gridThickness) * zoom.scale);
 }
 
 function setMove(x, y){
@@ -135,9 +151,8 @@ function setMove(x, y){
 }
 
 function canvasOnClick(evt){
-    var rect = canvas.getBoundingClientRect();
-    var cellX = Math.floor((evt.clientX - rect.left)/gridSize);
-    var cellY = Math.floor((evt.clientY - rect.top)/gridSize);
+    var cellX = Math.floor((evt.offsetX - zoom.offset.x) / (gridSize * zoom.scale));
+    var cellY = Math.floor((evt.offsetY - zoom.offset.y) / (gridSize * zoom.scale));
     setMove(cellX, cellY);
 }
 
@@ -149,10 +164,68 @@ function fitToContainer(){
   canvas.width  = canvas.offsetWidth;
   canvas.height = canvas.offsetHeight;
 }
+var oldX = 0;
+var oldY = 0;
+
+function canvasOnMouseMove(evt){
+    if(drag) {
+        zoom.offset.x += evt.offsetX - oldX;
+        zoom.offset.y += evt.offsetY - oldY;
+        redrawCanvas();
+        oldX = evt.offsetX;
+        oldY = evt.offsetY;
+    }
+}
+
+function canvasOnMouseDown(evt){
+    clicked = true;
+    pressTimer = setTimeout(function() {
+        clicked = false;
+        drag = true;
+        oldX = evt.offsetX;
+        oldY = evt.offsetY;
+    }, 100);
+}
+
+function canvasOnMouseUp(evt){
+    drag = false;
+    clearTimeout(pressTimer);
+    if(clicked) {
+        clicked = false;
+        canvasOnClick(evt);
+    }
+}
+
+function canvasOnMouseWheel(evt){
+    var dx = (evt.offsetX - zoom.c.x) / zoom.scale + zoom.w.x;
+    var dy = (evt.offsetY - zoom.c.y) / zoom.scale + zoom.w.y;
+
+    if (evt.deltaY < 0) {
+        zoom.scale = Math.min(5, zoom.scale * zoom.speed);
+    } else {
+        zoom.scale =  Math.max(0.1, zoom.scale / zoom.speed);
+    }
+    var info = document.getElementById('zoomLevel');
+    info.innerHTML = zoom.scale.toFixed(2);
+
+    zoom.c.x = evt.offsetX; // remember old cursor coordinates
+    zoom.c.y = evt.offsetY;
+    zoom.w.x = dx; // remeber old delta
+    zoom.w.y = dy;
+    zoom.offset.x = evt.offsetX - dx * zoom.scale;
+    zoom.offset.y = evt.offsetY - dy * zoom.scale;
+
+    redrawCanvas();
+    return false;
+}
 
 function InitCanvas(){
     canvas = document.getElementById('gamefield');
-    canvas.addEventListener('click', canvasOnClick, false);
+    canvas.addEventListener('mousemove', canvasOnMouseMove, false);
+    canvas.addEventListener('mousedown', canvasOnMouseDown,false);
+    canvas.addEventListener('mouseup', canvasOnMouseUp, false);
+    canvas.addEventListener("wheel", canvasOnMouseWheel, false);
+
     ctx = canvas.getContext("2d");
 
     resizeCanvas();
