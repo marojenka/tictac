@@ -16,7 +16,6 @@
 // green     #859900
 
 var colors = ['#fdf6e3', '#cb4b16', '#268bd2', '#eee8d5'];
-var moveNumber = 0;
 var canvas, ctx;
 var gridColor = '#eee8d5';
 var gridSize = 50;
@@ -40,7 +39,9 @@ var zoom = {
 var pressTimer;
 var clicked = false;
 var drag = false;
+var dragStep = 50;
 var players = [0, 0];
+var moves = [];
 var originalMousePosition;
 
 var scale = {
@@ -67,28 +68,49 @@ function getMouseOffset(event) {
     return offset;
 }
 
-function update(mn = moveNumber) {
+function update(mn = moves.length) {
     $.getJSON($SCRIPT_ROOT + '/_update', {move_number: mn},
         function(data) {
-            moves = data.moves;
-            moveNumber = data.move_number;
-            last_value = null;
-            for(i=0; i < moves.length; i++) {
-                fillSquare(moves[i][0], moves[i][1], colors[moves[i][2]]);
-                last_value = moves[i][2];
-            }
+            if(data.move_number == moves.length){ // we have all moves
+                if(data.moves.length > 0) {
+                    if(data.moves.length == moves.length) {
+                        console.log('Syncing ...');
+                        syncMoves(data.moves);
+                    } else
+                        console.log('Error, data not full', data, moves);
+                }
+            } else if(data.move_number == (moves.length + data.moves.length)) {
+                for(var i=0; i < data.moves.length; i++) {
+                    fillSquare(data.moves[i][0], data.moves[i][1], colors[data.moves[i][2]]);
+                }
+                moves = moves.concat(data.moves);
+                updateTurn(data.moves[data.moves.length-1][2]);
+            } else
+                console.log('Error, too much data', data, moves);
             if(data.players[0] != players[0] ||
                data.players[1] != players[1])
             {
                 console.log(players);
                 updatePlayers(data.players);
             }
-            if(last_value != null) {
-                updateTurn(last_value);
-            }
         }
     );
     return false;
+}
+
+function syncMoves(newMoves){
+    var sync = true;
+    for(var i=0; i < moves.length; i++) {
+        for(var j=0; j < moves[i].length; j++) {
+            if(moves[i][j] != newMoves[i][j]) {
+                console.log('out of sync:', i, moves[i], newMoves[i]);
+                moves[i][j] = newMoves[i][j]; 
+                sync = false;
+            }
+        }
+    }
+    if(!sync)
+        redrawCanvas();
 }
 
 function updatePlayers(newPlayers) {
@@ -98,7 +120,7 @@ function updatePlayers(newPlayers) {
 }
 
 function updateTurn(value) {
-    other = value == 1 ? 2 : 1;
+    var other = value == 1 ? 2 : 1;
     $('#user'+value).css('background-color', colors[0]);
     $('#user'+other).css('background-color', colors[other]);
 }
@@ -117,7 +139,7 @@ function ping() {
 function clear() {
     $.getJSON($SCRIPT_ROOT + '/_clear', {},
         function(date) {
-            moveNumber = 0;
+            moves = [];
             drawGrid();
         }
     );
@@ -133,7 +155,7 @@ function setUser(value) {
 }
 
 function setUsername(value) {
-    username = $('#username').val()
+    var username = $('#username').val()
     $.getJSON($SCRIPT_ROOT + '/_set_username', {username: username});
 }
 
@@ -151,6 +173,12 @@ function drawGrid() {
     ctx.strokeStyle = gridColor;
     ctx.lineWidth = scale.length(gridThickness);
     ctx.stroke();
+}
+
+function drawMoves(){
+    for(var i=0; i < moves.length; i++) {
+        fillSquare(moves[i][0], moves[i][1], colors[moves[i][2]]);
+    }
 }
 
 function fillSquare(x, y, color){
@@ -181,11 +209,10 @@ function fitToContainer(){
     canvas.height = canvas.offsetHeight;
 }
 
-function canvasOnClick(evt){
-    var mousePosition = getMouseOffset(evt);
-    var cellX = Math.floor(scale.x_INV(mousePosition[0]) / gridSize);
-    var cellY = Math.floor(scale.y_INV(mousePosition[1]) / gridSize);
-    setMove(cellX, cellY);
+function getCellByPos(pos){
+    var cell = [Math.floor(scale.x_INV(pos[0]) / gridSize),
+                Math.floor(scale.y_INV(pos[1]) / gridSize)];
+    return cell;
 }
 
 function canvasOnMouseMove(evt){
@@ -193,7 +220,7 @@ function canvasOnMouseMove(evt){
         var mousePosition = getMouseOffset(evt);
         var offset = [mousePosition[0] - originalMousePosition[0],
                       mousePosition[1] - originalMousePosition[1]];
-        if ( offset[0]**2 + offset[1]**2 > scale.length(gridSize)**2 ) {
+        if ( offset[0]**2 + offset[1]**2 > dragStep**2 ) {
             zoom.c.x += offset[0];
             zoom.c.y += offset[1];
             originalMousePosition = mousePosition;
@@ -225,16 +252,14 @@ function canvasOnMouseDown(evt){
 
 function canvasOnMouseUp(evt){
     var mousePosition = getMouseOffset(evt);
-    var offset = [mousePosition[0] - originalMousePosition[0],
-                  mousePosition[1] - originalMousePosition[1]];
+    var originalCell = getCellByPos(originalMousePosition);
     drag = false;
     evt.target.style.cursor = "auto";
     clearTimeout(pressTimer);
-    if ( ( clicked ) &
-         ( offset[0]**2 + offset[1]**2 < 0.5 * scale.length(gridSize)**2 ) )
-    {
+    var cell = getCellByPos(mousePosition);
+    if ( ( clicked ) && (originalCell[0] == cell[0]) && (originalCell[1] == cell[1]) ){
         clicked = false;
-        canvasOnClick(evt);
+        setMove(cell[0], cell[1]);
     }
     evt.preventDefault();
     return false;
@@ -293,6 +318,7 @@ function InitCanvas(){
 function redrawCanvas(){
     drawGrid();
     update(0);
+    drawMoves();
 }
 
 function resizeCanvas(){
