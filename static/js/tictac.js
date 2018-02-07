@@ -16,7 +16,6 @@
 // green     #859900
 
 var colors = ['#fdf6e3', '#cb4b16', '#268bd2', '#eee8d5'];
-var moveNumber = 0;
 var canvas, ctx;
 var gridColor = '#eee8d5';
 var gridSize = 50;
@@ -41,6 +40,7 @@ var pressTimer;
 var clicked = false;
 var drag = false;
 var players = [0, 0];
+var moves = [];
 var originalMousePosition;
 
 var scale = {
@@ -67,15 +67,20 @@ function getMouseOffset(event) {
     return offset;
 }
 
-function update(mn = moveNumber) {
+function update(mn = moves.length) {
     $.getJSON($SCRIPT_ROOT + '/_update', {move_number: mn},
         function(data) {
-            moves = data.moves;
-            moveNumber = data.move_number;
-            last_value = null;
-            for(i=0; i < moves.length; i++) {
-                fillSquare(moves[i][0], moves[i][1], colors[moves[i][2]]);
-                last_value = moves[i][2];
+            if(data.move_number == moves.length){
+                if(data.moves.length == moves.length) {
+                    //syncMoves(data.moves);
+                }
+            } else {
+                for(var i=0; i < data.moves.length; i++) {
+                    fillSquare(data.moves[i][0], data.moves[i][1], colors[data.moves[i][2]]);
+                    last_value = data.moves[i][2];
+                }
+                moves = moves.concat(data.moves);
+                updateTurn(data.moves[data.moves.length-1][2]);
             }
             if(data.players[0] != players[0] ||
                data.players[1] != players[1])
@@ -83,12 +88,24 @@ function update(mn = moveNumber) {
                 console.log(players);
                 updatePlayers(data.players);
             }
-            if(last_value != null) {
-                updateTurn(last_value);
-            }
         }
     );
     return false;
+}
+
+function suncMoves(newMoves){
+    var sync = true;
+    for(var i=0; i < moves.length; i++) {
+        for(var j=0; j < moves[i].length; j++) {
+            if(moves[i][j] != newMoves[i][j]) {
+                console.log('out of sync:', i, moves[i], newMoves[i]);
+                moves[i][j] = newMoves[i][j]; 
+                sync = false;
+            }
+        }
+    }
+    if(!sync)
+        redrawCanvas();
 }
 
 function updatePlayers(newPlayers) {
@@ -98,7 +115,7 @@ function updatePlayers(newPlayers) {
 }
 
 function updateTurn(value) {
-    other = value == 1 ? 2 : 1;
+    var other = value == 1 ? 2 : 1;
     $('#user'+value).css('background-color', colors[0]);
     $('#user'+other).css('background-color', colors[other]);
 }
@@ -117,7 +134,7 @@ function ping() {
 function clear() {
     $.getJSON($SCRIPT_ROOT + '/_clear', {},
         function(date) {
-            moveNumber = 0;
+            moves = [];
             drawGrid();
         }
     );
@@ -133,7 +150,7 @@ function setUser(value) {
 }
 
 function setUsername(value) {
-    username = $('#username').val()
+    var username = $('#username').val()
     $.getJSON($SCRIPT_ROOT + '/_set_username', {username: username});
 }
 
@@ -151,6 +168,12 @@ function drawGrid() {
     ctx.strokeStyle = gridColor;
     ctx.lineWidth = scale.length(gridThickness);
     ctx.stroke();
+}
+
+function drawMoves(){
+    for(var i=0; i < moves.length; i++) {
+        fillSquare(moves[i][0], moves[i][1], colors[moves[i][2]]);
+    }
 }
 
 function fillSquare(x, y, color){
@@ -293,6 +316,7 @@ function InitCanvas(){
 function redrawCanvas(){
     drawGrid();
     update(0);
+    drawMoves();
 }
 
 function resizeCanvas(){
