@@ -1,3 +1,4 @@
+import uuid
 # data classes used in python backend for tictac multiplayer game
 
 
@@ -23,6 +24,7 @@ class Gameboard(object):
         self.players = [None, None]
         self.moves = []
         self.data = {}
+        self.id = uuid.uuid1()
 
     def turn(self):
         """
@@ -54,7 +56,7 @@ class Gameboard(object):
 
     def cell(self, x, y):
         """
-        get value from cell 
+        get value from cell
         Return None if index is not valid.
         """
         if self.validate_indexes(x, y):

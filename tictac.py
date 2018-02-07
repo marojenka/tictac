@@ -52,7 +52,7 @@ def update():
     move_number = request.args.get('move_number', type=int)
     players = [users.get(key) for key in g.players]
     return jsonify(moves=g.moves[move_number:], move_number=len(g.moves),
-                   players=players)
+                   players=players, game_id=g.id)
 
 @app.route('/_set_user')
 def set_user():
