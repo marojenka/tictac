@@ -8,7 +8,12 @@ users = {}
 
 def get_user():
     if 'user_uuid' in session:
-        pass
+        uid = session['user_uuid']
+        if uid not in users:
+            uid = session['user_uuid']
+            if 'username' not in session:
+                session['username'] = '%5s' % str(uid)[:5]
+            users[uid] = session['username']
     else:
         count = 0
         while True:
@@ -18,17 +23,15 @@ def get_user():
             count = count + 1
             if count > 1e4:
                 break
+        users[uid] = '%5s' % str(uid)[:5]
         session['user_uuid'] = uid
         session['username'] = users[uid]
-    if session['user_uuid'] not in users:
-        uid = session['user_uuid']
-        users[uid] = '%5s' % str(uid)[:5]
     return session['user_uuid']
 
 @app.route('/')
 def index():
     user = get_user()
-    return render_template('index.html', user=user)
+    return render_template('index.html', user=users[user])
 
 @app.route('/_ping')
 def ping():
