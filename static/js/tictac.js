@@ -39,6 +39,7 @@ var zoom = {
 var pressTimer;
 var clicked = false;
 var drag = false;
+var dragStep = 50;
 var players = [0, 0];
 var moves = [];
 var originalMousePosition;
@@ -72,7 +73,8 @@ function update(mn = moves.length) {
         function(data) {
             if(data.move_number == moves.length){
                 if(data.moves.length == moves.length) {
-                    //syncMoves(data.moves);
+                    console.log('Syncing ...');
+                    syncMoves(data.moves);
                 }
             } else {
                 for(var i=0; i < data.moves.length; i++) {
@@ -93,7 +95,7 @@ function update(mn = moves.length) {
     return false;
 }
 
-function suncMoves(newMoves){
+function syncMoves(newMoves){
     var sync = true;
     for(var i=0; i < moves.length; i++) {
         for(var j=0; j < moves[i].length; j++) {
@@ -204,11 +206,10 @@ function fitToContainer(){
     canvas.height = canvas.offsetHeight;
 }
 
-function canvasOnClick(evt){
-    var mousePosition = getMouseOffset(evt);
-    var cellX = Math.floor(scale.x_INV(mousePosition[0]) / gridSize);
-    var cellY = Math.floor(scale.y_INV(mousePosition[1]) / gridSize);
-    setMove(cellX, cellY);
+function getCellByPos(pos){
+    var cell = [Math.floor(scale.x_INV(pos[0]) / gridSize),
+                Math.floor(scale.y_INV(pos[1]) / gridSize)];
+    return cell;
 }
 
 function canvasOnMouseMove(evt){
@@ -216,7 +217,7 @@ function canvasOnMouseMove(evt){
         var mousePosition = getMouseOffset(evt);
         var offset = [mousePosition[0] - originalMousePosition[0],
                       mousePosition[1] - originalMousePosition[1]];
-        if ( offset[0]**2 + offset[1]**2 > scale.length(gridSize)**2 ) {
+        if ( offset[0]**2 + offset[1]**2 > dragStep**2 ) {
             zoom.c.x += offset[0];
             zoom.c.y += offset[1];
             originalMousePosition = mousePosition;
@@ -248,16 +249,14 @@ function canvasOnMouseDown(evt){
 
 function canvasOnMouseUp(evt){
     var mousePosition = getMouseOffset(evt);
-    var offset = [mousePosition[0] - originalMousePosition[0],
-                  mousePosition[1] - originalMousePosition[1]];
+    var originalCell = getCellByPos(originalMousePosition);
     drag = false;
     evt.target.style.cursor = "auto";
     clearTimeout(pressTimer);
-    if ( ( clicked ) &
-         ( offset[0]**2 + offset[1]**2 < 0.5 * scale.length(gridSize)**2 ) )
-    {
+    var cell = getCellByPos(mousePosition);
+    if ( ( clicked ) && (originalCell[0] == cell[0]) && (originalCell[1] == cell[1]) ){
         clicked = false;
-        canvasOnClick(evt);
+        setMove(cell[0], cell[1]);
     }
     evt.preventDefault();
     return false;
