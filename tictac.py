@@ -1,20 +1,29 @@
+import uuid
 from flask import Flask, session, request, render_template, jsonify
 from data import Gameboard
 app = Flask(__name__)
 
 g = Gameboard()
-
-last_uid = 1
+users = {}
 
 def get_user():
-    global last_uid
-    if 'username' in session:
+    if 'user_uuid' in session:
         pass
     else:
-        session['username'] = last_uid
-        last_uid = last_uid + 1
-    return session['username']
-
+        count = 0
+        while True:
+            uid = uuid.uuid1()
+            if not uid in users:
+                break
+            count = count + 1
+            if count > 1e4:
+                break
+        session['user_uuid'] = uid
+        session['username'] = users[uid]
+    if session['user_uuid'] not in users:
+        uid = session['user_uuid']
+        users[uid] = '%5s' % str(uid)[:5]
+    return session['user_uuid']
 
 @app.route('/')
 def index():
@@ -38,8 +47,9 @@ def update():
     if g.moves is None:
         return None
     move_number = request.args.get('move_number', type=int)
+    players = [users.get(key) for key in g.players]
     return jsonify(moves=g.moves[move_number:], move_number=len(g.moves),
-                   players=g.players)
+                   players=players)
 
 @app.route('/_set_user')
 def set_user():
@@ -54,7 +64,10 @@ def set_user():
 
 @app.route('/_set_username')
 def set_username():
-    session['username'] = request.args.get('username', type=str)
+    user = get_user()
+    username = request.args.get('username', type=str)
+    users[user] = username
+    session['username'] = username
     return jsonify(username=session['username'])
 
 @app.route('/_move')
