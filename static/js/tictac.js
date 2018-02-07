@@ -82,7 +82,6 @@ function update(mn = moves.length) {
             } else if(data.move_number == (moves.length + data.moves.length)) {
                 for(var i=0; i < data.moves.length; i++) {
                     fillSquare(data.moves[i][0], data.moves[i][1], colors[data.moves[i][2]]);
-                    last_value = data.moves[i][2];
                 }
                 moves = moves.concat(data.moves);
                 updateTurn(data.moves[data.moves.length-1][2]);
