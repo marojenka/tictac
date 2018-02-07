@@ -22,20 +22,16 @@ var gridColor = '#eee8d5';
 var gridSize = 50;
 var gridThickness = 4;
 var zoom = {
-  scale : 1,
-  speed : 1.1,
-  c : {
-    x : 0,
-    y : 0,
-  },
-  w : {
-    x : 0,
-    y : 0,
-  },
-  offset : {
-    x : 0,
-    y : 0,
-  }
+    scale : 1,
+    speed : 1.1,
+    c : {
+        x : 0,
+        y : 0,
+    },
+    w : {
+        x : 0,
+        y : 0,
+    }
 };
 var pressTimer;
 var clicked = false;
@@ -44,27 +40,27 @@ var players = [0, 0];
 var originalMousePosition;
 
 var scale = {
-  length : function(number) {
-    return (number * zoom.scale);
-  },
-  x : function(number) {
-    return ((number - zoom.w.x) * zoom.scale + zoom.c.x);
-  },
-  y : function(number) {
-    return ((number - zoom.w.y) * zoom.scale + zoom.c.y);
-  },
-  x_INV : function(number) {
-    return ((number - zoom.c.x) / zoom.scale + zoom.w.x);
-  },
-  y_INV : function(number) {
-    return ((number - zoom.c.y) / zoom.scale + zoom.w.y);
-  },
+    length : function(number) {
+        return (number * zoom.scale);
+    },
+    x : function(number) {
+        return ((number - zoom.w.x) * zoom.scale + zoom.c.x);
+    },
+    y : function(number) {
+        return ((number - zoom.w.y) * zoom.scale + zoom.c.y);
+    },
+    x_INV : function(number) {
+        return ((number - zoom.c.x) / zoom.scale + zoom.w.x);
+    },
+    y_INV : function(number) {
+        return ((number - zoom.c.y) / zoom.scale + zoom.w.y);
+    }
 };
 
 function getMouseOffset(event) {
-  var offset  = [event.offsetX || event.pageX - $(event.target).offset().left,
-                 event.offsetY || event.pageY - $(event.target).offset().top];
-  return offset;
+    var offset  = [event.offsetX || event.pageX - $(event.target).offset().left,
+                   event.offsetY || event.pageY - $(event.target).offset().top];
+    return offset;
 }
 
 function update(mn = moveNumber) {
@@ -81,37 +77,37 @@ function update(mn = moveNumber) {
                data.players[1] != players[1])
             {
                 console.log(players);
-                update_players(data.players);
+                updatePlayers(data.players);
             }
             if(last_value != null) {
-                update_turn(last_value);
+                updateTurn(last_value);
             }
         }
     );
     return false;
 }
 
-function update_players(new_players) {
-    players = new_players;
+function updatePlayers(newPlayers) {
+    players = newPlayers;
     $('#user1').html(players[0]);
     $('#user2').html(players[1]);
 }
 
-function update_turn(value) {
+function updateTurn(value) {
     other = value == 1 ? 2 : 1;
     $('#user'+value).css('background-color', colors[0]);
     $('#user'+other).css('background-color', colors[other]);
 }
 
 function ping() {
-  $('#foo').bind('click', function() {
-    $.getJSON($SCRIPT_ROOT + '/ping', {},
-      function(data) {
-          $("#result").text(data.answer);
-      }
-    );
+    $('#foo').bind('click', function() {
+        $.getJSON($SCRIPT_ROOT + '/ping', {},
+            function(data) {
+                $("#result").text(data.answer);
+            }
+        );
     return false;
-  });
+    });
 }
 
 function clear() {
@@ -123,20 +119,19 @@ function clear() {
     );
 }
 
-function set_user(value) {
-  $.getJSON($SCRIPT_ROOT + '/_set_user', {value: value},
-    function(data) {
-      if(data.value == value)
-        alert('Role is set');
-    }
-  );
+function setUser(value) {
+    $.getJSON($SCRIPT_ROOT + '/_set_user', {value: value},
+        function(data) {
+            if(data.value == value)
+                alert('Role is set');
+        }
+    );
 }
 
-function set_username(value) {
-  username = $('#username').val()
-  $.getJSON($SCRIPT_ROOT + '/_set_username', {username: username});
+function setUsername(value) {
+    username = $('#username').val()
+    $.getJSON($SCRIPT_ROOT + '/_set_username', {username: username});
 }
-
 
 function drawGrid() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -176,10 +171,10 @@ function setMove(x, y){
 }
 
 function fitToContainer(){
-  canvas.style.width  = '100%';
-  canvas.style.height = '100%';
-  canvas.width  = canvas.offsetWidth;
-  canvas.height = canvas.offsetHeight;
+    canvas.style.width  = '100%';
+    canvas.style.height = '100%';
+    canvas.width  = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
 }
 
 function canvasOnClick(evt){
@@ -201,6 +196,7 @@ function canvasOnMouseMove(evt){
             redrawCanvas();
         }
     }
+    evt.preventDefault();
     return false;
 }
 
@@ -219,6 +215,7 @@ function canvasOnMouseDown(evt){
             evt.target.style.cursor = "move";
         }, 300);
     }
+    evt.preventDefault();
     return false;
 }
 
@@ -230,11 +227,12 @@ function canvasOnMouseUp(evt){
     evt.target.style.cursor = "auto";
     clearTimeout(pressTimer);
     if ( ( clicked ) &
-         ( offset[0]**2 + offset[1]**2 < 0.5 * (gridSize * zoom.scale)**2 ) )
+         ( offset[0]**2 + offset[1]**2 < 0.5 * scale.length(gridSize)**2 ) )
     {
         clicked = false;
         canvasOnClick(evt);
     }
+    evt.preventDefault();
     return false;
 }
 
@@ -256,6 +254,7 @@ function canvasOnMouseWheel(evt){
     zoom.w.y = dy;
 
     redrawCanvas();
+    evt.preventDefault();
     return false;
 }
 
@@ -306,7 +305,7 @@ $(function tictac() {
 // clear game board by clicling the button
 $('#clear').click(clear);
 $('#refresh').click(function(){update(0)});
-$('#set_username').click(function(){set_username()});
-$('#bex').click(function(){set_user('0')});
-$('#beo').click(function(){set_user('1')});
+$('#setUsername').click(function(){setUsername()});
+$('#bex').click(function(){setUser('0')});
+$('#beo').click(function(){setUser('1')});
 $('#resetScale').click(resetScale);
