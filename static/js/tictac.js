@@ -23,7 +23,7 @@ var gridSize = 50;
 var gridThickness = 4;
 var zoom = {
   scale : 1,
-  speed : 2,
+  speed : 1.1,
   c : {
     x : 0,
     y : 0,
@@ -42,6 +42,24 @@ var clicked = false;
 var drag = false;
 var players = [0, 0];
 var originalMousePosition;
+
+var scale = {
+  length : function(number) {
+    return (number * zoom.scale);
+  },
+  x : function(number) {
+    return ((number - zoom.w.x) * zoom.scale + zoom.c.x);
+  },
+  y : function(number) {
+    return ((number - zoom.w.y) * zoom.scale + zoom.c.y);
+  },
+  x_INV : function(number) {
+    return ((number - zoom.c.x) / zoom.scale + zoom.w.x);
+  },
+  y_INV : function(number) {
+    return ((number - zoom.c.y) / zoom.scale + zoom.w.y);
+  },
+};
 
 function getMouseOffset(event) {
   var offset  = [event.offsetX || event.pageX - $(event.target).offset().left,
@@ -123,16 +141,16 @@ function set_username(value) {
 function drawGrid() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.beginPath();
-    for (var x = zoom.offset.x % (gridSize * zoom.scale); x < canvas.width; x += (gridSize * zoom.scale)) {
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, canvas.height);
+    for (var x = scale.x(0) % scale.length(gridSize) ; x < canvas.width; x += scale.length(gridSize)) {
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
     }
-    for (var y = zoom.offset.y % (gridSize * zoom.scale); y < canvas.height; y += (gridSize * zoom.scale)) {
-      ctx.moveTo(0, y);
-      ctx.lineTo(canvas.width, y);
+    for (var y = scale.y(0) % scale.length(gridSize); y < canvas.height; y += scale.length(gridSize)) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
     }
     ctx.strokeStyle = gridColor;
-    ctx.lineWidth = gridThickness * zoom.scale;
+    ctx.lineWidth = scale.length(gridThickness);
     ctx.stroke();
 }
 
@@ -140,10 +158,10 @@ function fillSquare(x, y, color){
     // fill rectangle with player color
     // change to X O if needed
     ctx.fillStyle = color;
-    ctx.fillRect(zoom.offset.x + x * gridSize * zoom.scale + gridThickness * zoom.scale / 2,
-                 zoom.offset.y + y * gridSize * zoom.scale + gridThickness * zoom.scale / 2,
-                 (gridSize - gridThickness) * zoom.scale,
-                 (gridSize - gridThickness) * zoom.scale);
+    ctx.fillRect(scale.x(x * gridSize) + scale.length(gridThickness / 2),
+                 scale.y(y * gridSize) + scale.length(gridThickness / 2),
+                 scale.length(gridSize - gridThickness),
+                 scale.length(gridSize - gridThickness));
 }
 
 function setMove(x, y){
@@ -157,19 +175,18 @@ function setMove(x, y){
     );
 }
 
-function canvasOnClick(evt){
-    var cellX = Math.floor((evt.offsetX - zoom.offset.x) / (gridSize * zoom.scale));
-    var cellY = Math.floor((evt.offsetY - zoom.offset.y) / (gridSize * zoom.scale));
-    setMove(cellX, cellY);
-}
-
 function fitToContainer(){
-  // Make it visually fill the positioned parent
   canvas.style.width  = '100%';
   canvas.style.height = '100%';
-  // ...then set the internal size to match
   canvas.width  = canvas.offsetWidth;
   canvas.height = canvas.offsetHeight;
+}
+
+function canvasOnClick(evt){
+    var mousePosition = getMouseOffset(evt);
+    var cellX = Math.floor(scale.x_INV(mousePosition[0]) / gridSize);
+    var cellY = Math.floor(scale.y_INV(mousePosition[1]) / gridSize);
+    setMove(cellX, cellY);
 }
 
 function canvasOnMouseMove(evt){
@@ -177,13 +194,14 @@ function canvasOnMouseMove(evt){
         var mousePosition = getMouseOffset(evt);
         var offset = [mousePosition[0] - originalMousePosition[0],
                       mousePosition[1] - originalMousePosition[1]];
-        if ( offset[0]**2 + offset[1]**2 > (gridSize * zoom.scale)**2 ) {
-            zoom.offset.x += offset[0];
-            zoom.offset.y += offset[1];
+        if ( offset[0]**2 + offset[1]**2 > scale.length(gridSize)**2 ) {
+            zoom.c.x += offset[0];
+            zoom.c.y += offset[1];
             originalMousePosition = mousePosition;
             redrawCanvas();
         }
     }
+    return false;
 }
 
 function canvasOnMouseDown(evt){
@@ -198,8 +216,10 @@ function canvasOnMouseDown(evt){
         pressTimer = setTimeout(function() {
             clicked = false;
             drag = true;
-        }, 100);
+            evt.target.style.cursor = "move";
+        }, 300);
     }
+    return false;
 }
 
 function canvasOnMouseUp(evt){
@@ -207,6 +227,7 @@ function canvasOnMouseUp(evt){
     var offset = [mousePosition[0] - originalMousePosition[0],
                   mousePosition[1] - originalMousePosition[1]];
     drag = false;
+    evt.target.style.cursor = "auto";
     clearTimeout(pressTimer);
     if ( ( clicked ) &
          ( offset[0]**2 + offset[1]**2 < 0.5 * (gridSize * zoom.scale)**2 ) )
@@ -214,29 +235,38 @@ function canvasOnMouseUp(evt){
         clicked = false;
         canvasOnClick(evt);
     }
+    return false;
 }
 
 function canvasOnMouseWheel(evt){
-    var dx = (evt.offsetX - zoom.c.x) / zoom.scale + zoom.w.x;
-    var dy = (evt.offsetY - zoom.c.y) / zoom.scale + zoom.w.y;
+    var mousePosition = getMouseOffset(evt);
+    var dx = scale.x_INV(mousePosition[0]);
+    var dy = scale.y_INV(mousePosition[1]);
 
     if (evt.deltaY < 0) {
         zoom.scale = Math.min(5, zoom.scale * zoom.speed);
     } else {
         zoom.scale =  Math.max(0.1, zoom.scale / zoom.speed);
     }
-    var info = document.getElementById('zoomLevel');
-    info.innerHTML = zoom.scale.toFixed(2);
+    document.getElementById('zoomLevel').innerHTML = zoom.scale.toFixed(2);
 
-    zoom.c.x = evt.offsetX; // remember old cursor coordinates
-    zoom.c.y = evt.offsetY;
-    zoom.w.x = dx; // remeber old delta
+    zoom.c.x = mousePosition[0];
+    zoom.c.y = mousePosition[1];
+    zoom.w.x = dx;
     zoom.w.y = dy;
-    zoom.offset.x = evt.offsetX - dx * zoom.scale;
-    zoom.offset.y = evt.offsetY - dy * zoom.scale;
 
     redrawCanvas();
     return false;
+}
+
+function resetScale(){
+    zoom.c.x = 0;
+    zoom.c.y = 0;
+    zoom.w.x = 0;
+    zoom.w.y = 0;
+    zoom.scale = 1;
+    document.getElementById('zoomLevel').innerHTML = 1;
+    redrawCanvas();
 }
 
 function InitCanvas(){
@@ -279,3 +309,4 @@ $('#refresh').click(function(){update(0)});
 $('#set_username').click(function(){set_username()});
 $('#bex').click(function(){set_user('0')});
 $('#beo').click(function(){set_user('1')});
+$('#resetScale').click(resetScale);
