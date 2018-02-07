@@ -24,13 +24,17 @@ var gridThickness = 4;
 var zoom = {
     scale : 1,
     speed : 1.1,
+    range : {
+        min: 0.1,
+        max: 5
+    },
     c : {
         x : 0,
-        y : 0,
+        y : 0
     },
     w : {
         x : 0,
-        y : 0,
+        y : 0
     }
 };
 var pressTimer;
@@ -237,14 +241,19 @@ function canvasOnMouseUp(evt){
 }
 
 function canvasOnMouseWheel(evt){
+    // Do nothing if already zoomed to max\min
+    if(((evt.deltaY < 0) && (zoom.scale == zoom.range.max)) ||
+       ((evt.deltaY > 0) && (zoom.scale == zoom.range.min)))
+        return false;
+
     var mousePosition = getMouseOffset(evt);
     var dx = scale.x_INV(mousePosition[0]);
     var dy = scale.y_INV(mousePosition[1]);
 
     if (evt.deltaY < 0) {
-        zoom.scale = Math.min(5, zoom.scale * zoom.speed);
+        zoom.scale = Math.min(zoom.range.max, zoom.scale * zoom.speed);
     } else {
-        zoom.scale =  Math.max(0.1, zoom.scale / zoom.speed);
+        zoom.scale =  Math.max(zoom.range.min, zoom.scale / zoom.speed);
     }
     document.getElementById('zoomLevel').innerHTML = zoom.scale.toFixed(2);
 
