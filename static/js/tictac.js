@@ -71,19 +71,23 @@ function getMouseOffset(event) {
 function update(mn = moves.length) {
     $.getJSON($SCRIPT_ROOT + '/_update', {move_number: mn},
         function(data) {
-            if(data.move_number == moves.length){
-                if(data.moves.length == moves.length) {
-                    console.log('Syncing ...');
-                    syncMoves(data.moves);
+            if(data.move_number == moves.length){ // we have all moves
+                if(data.moves.length > 0) {
+                    if(data.moves.length == moves.length) {
+                        console.log('Syncing ...');
+                        syncMoves(data.moves);
+                    } else
+                        console.log('Error, data not full', data, moves);
                 }
-            } else {
+            } else if(data.move_number == (moves.length + data.moves.length)) {
                 for(var i=0; i < data.moves.length; i++) {
                     fillSquare(data.moves[i][0], data.moves[i][1], colors[data.moves[i][2]]);
                     last_value = data.moves[i][2];
                 }
                 moves = moves.concat(data.moves);
                 updateTurn(data.moves[data.moves.length-1][2]);
-            }
+            } else
+                console.log('Error, too much data', data, moves);
             if(data.players[0] != players[0] ||
                data.players[1] != players[1])
             {
